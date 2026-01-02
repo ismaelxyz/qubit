@@ -36,8 +36,6 @@
 
 use std::fmt::{Display, Formatter, Result};
 
-const DEBUG : bool = false;
-
 /// `f64` wrapper to use with formatting code.
 /// See the crate-level doc for details.
 ///
@@ -75,7 +73,7 @@ impl PrettyPrintFloat {
         if x < 0.001 {
             return NumberClass::Small;
         }
-        return NumberClass::Medium;
+        NumberClass::Medium
     }
 }
 
@@ -100,7 +98,9 @@ impl Display for PrettyPrintFloat {
         use NumberClass::*;
         let mut c = self.cls();
 
-        if DEBUG { eprintln!("Number {} classified as {:?}", x, c); }
+        if cfg!(debug_assertions) {
+            dbg!(x, &c);
+        }
 
         if c == Special {
             let q = format!("{}", x);
@@ -123,33 +123,44 @@ impl Display for PrettyPrintFloat {
             probe_for_medium_mode = format!("{:.0}", x);
             let length_of_integer_part = probe_for_medium_mode.len();
 
-            if DEBUG { eprintln!(
-                "Probe=`{}`; length of integer part is {}, which width_max is {}",
-                probe_for_medium_mode,
-                length_of_integer_part,
-                width_max,
-            ); }
+            if cfg!(debug_assertions) {
+                dbg!(
+                    probe_for_medium_mode.as_str(),
+                    length_of_integer_part,
+                    width_max
+                );
+            }
 
             match length_of_integer_part {
                 l if l > width_max => {
-                    if DEBUG { eprintln!("Too large, switching to Big"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Too large, switching to Big");
+                    }
                     c = Big;
                 },
                 l if l + 1 >= width_max => {
-                    if DEBUG { eprintln!("Almost too large, checking zeroness"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Almost too large, checking zeroness");
+                    }
                     if probe_for_medium_mode != "0" {
-                        if DEBUG { eprintln!("Seems to be OK to print as integer"); }
+                        if cfg!(debug_assertions) {
+                            dbg!("Seems to be OK to print as integer");
+                        }
                         // print as integer
                         return write!(fmt, "{:w$.0}", x, w=width_min);
                     } else {
-                        if DEBUG { eprintln!("Refusing to print it"); }
+                        if cfg!(debug_assertions) {
+                            dbg!("Refusing to print it");
+                        }
                         c = Unprintable;
                     }
                 },
                 _ => {
                     // Enouch room to try fractional part
                     // Check if it would be all zeroes
-                    if DEBUG { eprintln!("Enough room to consider fractional part"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Enough room to consider fractional part");
+                    }
 
                     let probe = format!(
                         "{:.p$}",
@@ -181,16 +192,16 @@ impl Display for PrettyPrintFloat {
                             },
                         }
                     }
-                    if DEBUG { eprintln!(
-                        "{} zero of {} digits in the test print",
-                        num_zeroes,
-                        num_digits,
-                    ); }
+                    if cfg!(debug_assertions) {
+                        dbg!(num_zeroes, num_digits);
+                    }
 
                     assert!(num_digits > 0);
 
                     if (num_zeroes * 100 / num_digits) > 80 {
-                        if DEBUG { eprintln!("Too small to print normally, switching to Small"); }
+                        if cfg!(debug_assertions) {
+                            dbg!("Too small to print normally, switching to Small");
+                        }
                         // Too many zeroes, too few actual digits
                         c = Small;
                     }
@@ -198,13 +209,19 @@ impl Display for PrettyPrintFloat {
             }
 
             if c == Medium {
-                if DEBUG { eprintln!("Medium mode confirmed"); }
+                if cfg!(debug_assertions) {
+                    dbg!("Medium mode confirmed");
+                }
                 // b fits max_width, but there may be opportunities to chip off zeroes
                 let mut b = format!("{:.p$}", x, p=(width_max-1-length_of_integer_part));
-                if DEBUG { eprintln!("Intermediate result: {}", &b); }
-                let first_digit_of_probe = probe_for_medium_mode.bytes().into_iter().next();
-                if first_digit_of_probe == Some(b'1') && first_digit_of_probe != b.bytes().into_iter().next() {
-                    if DEBUG { eprintln!("Looks like we have overestimated the integer part size");  }
+                if cfg!(debug_assertions) {
+                    dbg!(&b);
+                }
+                let first_digit_of_probe = probe_for_medium_mode.bytes().next();
+                if first_digit_of_probe == Some(b'1') && first_digit_of_probe != b.bytes().next() {
+                    if cfg!(debug_assertions) {
+                        dbg!("Looks like we have overestimated the integer part size");
+                    }
 
                     let b2 = format!("{:.p$}", x, p=(width_max-1-length_of_integer_part+1));
                     if b2.len() <= width_max {
@@ -221,7 +238,9 @@ impl Display for PrettyPrintFloat {
                             // protect one zero after '.'
                             break
                         }
-                        if DEBUG { eprintln!("Chipped away some zero"); }
+                        if cfg!(debug_assertions) {
+                            dbg!("Chipped away some zero");
+                        }
                         end -= 1;
                     }
                 }
@@ -237,27 +256,39 @@ impl Display for PrettyPrintFloat {
             Zero | Special | Medium => unreachable!(),
             Big | Small => {
                 let probe = format!("{:.0e}", x);
-                if DEBUG { eprintln!("First probe: {}", &probe); }
+                if cfg!(debug_assertions) {
+                    dbg!(&probe);
+                }
                 let mut minimum = probe.len();
                 if minimum > width_max {
-                    if DEBUG { eprintln!("Can't fit it"); }
-                    if c == Big {
-                        c = Unprintable;
-                    } else {
-                        if DEBUG { eprintln!("Just print zero"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Can't fit it");
+                    }
+                    if c != Big {
+                        if cfg!(debug_assertions) {
+                            dbg!("Just print zero");
+                        }
                         return write!(fmt, "{:w$}", 0.0, w=width_min);
                     }
                 } else if minimum == width_max {
-                    if DEBUG { eprintln!("Fits just right"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Fits just right");
+                    }
                     return write!(fmt, "{}", probe);
                 } else if minimum == width_max-1 {
-                    if DEBUG { eprintln!("Fits almost just right"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("Fits almost just right");
+                    }
                     // Can't increase precision because of we need to add a `.` as well
                     return write!(fmt, " {}", probe);
                 } else {
-                    if DEBUG { eprintln!("There is some space to be more precise"); }
+                    if cfg!(debug_assertions) {
+                        dbg!("There is some space to be more precise");
+                    }
                     let probe2 = format!("{:.p$e}", x, p=(width_max - minimum - 1) );
-                    if DEBUG { eprintln!("Second probe: {}", &probe2); }
+                    if cfg!(debug_assertions) {
+                        dbg!(&probe2);
+                    }
                     if probe2.len() > width_max {
                         minimum += probe2.len() - width_max;
                     }
@@ -270,15 +301,18 @@ impl Display for PrettyPrintFloat {
                         },
                         _ => zeroes_in_a_row = 0,
                     } }
-                    if DEBUG { eprintln!("{} zeroes before E", zeroes_before_e); }
+                    if cfg!(debug_assertions) {
+                        dbg!(zeroes_before_e);
+                    }
                     let zeroes_to_chip_away = zeroes_before_e.min(width_max-width_min);
-                    if DEBUG { eprintln!("{} zeroes to be removed", zeroes_to_chip_away); }
+                    if cfg!(debug_assertions) {
+                        dbg!(zeroes_to_chip_away);
+                    }
                     return write!(fmt, "{:.p$e}", x, p=(width_max - minimum - 1 - zeroes_to_chip_away) );
                 }
             },
             Unprintable => (),
         }
-        let _ = c;
 
         write!(fmt, "{:.p$}", "##################################", p=width_min)
     }
