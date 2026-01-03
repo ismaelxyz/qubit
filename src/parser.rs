@@ -133,12 +133,10 @@ fn eval(
             Rule::num => pair.as_str().trim().parse::<f64>().unwrap(),
             Rule::ident => {
                 let name = pair.as_str();
-                if let Some(locals) = locals {
-                    if let Some(v) = locals.get(name) {
-                        return *v;
-                    }
-                }
-                env.vars.get(name).copied().unwrap_or(f64::NAN)
+                locals
+                    .and_then(|l| l.get(name).copied())
+                    .or_else(|| env.vars.get(name).copied())
+                    .unwrap_or(f64::NAN)
             }
             Rule::expr => eval(pair.into_inner(), env, locals, depth),
             _ => f64::NAN,
@@ -243,6 +241,7 @@ pub fn parse_with_env(input: &str, env: &mut Env) -> f64 {
     }
 }
 
+#[cfg(test)]
 pub fn parse(input: &str) -> f64 {
     let mut env = Env::default();
     parse_with_env(input, &mut env)
