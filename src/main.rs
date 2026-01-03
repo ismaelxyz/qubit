@@ -241,8 +241,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .font(include_bytes!("../assets/DejaVuSans.ttf").as_slice())
         .default_font(iced::Font::with_name("DejaVu Sans"));
 
-    daemon
-        .run()?;
+    daemon.run()?;
 
     Ok(())
 }
