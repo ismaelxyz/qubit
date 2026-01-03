@@ -59,8 +59,6 @@ impl CalculatorEngine {
 enum Message {
     Edit(text_editor::Action),
     WindowOpened(Id),
-    //  Event(window::Id, Event),
-    // Tick(Instant),
 }
 
 fn app_background(theme: &Theme) -> iced::widget::container::Style {
@@ -232,39 +230,18 @@ impl QubitApp {
     }
 }
 
-// #[cfg(not(target_arch = "wasm32"))]
-// fn main() -> iced::Result {
-//     QubitApp::run(iced::Settings::default())
-// }
-
-// #[cfg(target_arch = "wasm32")]
-// fn main() {
-//     // For web builds (e.g. via Trunk), iced will hook into the browser event loop.
-//     // `run` is available on wasm as well.
-//     let _ = QubitApp::run(iced::Settings::default());
-// }
-
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // #[cfg(not(target_arch = "wasm32"))]
-    // {
-    //     QubitApp::run(iced::Settings::default()).unwrap();
-    // }
-
-    // #[cfg(target_arch = "wasm32")]
-    // {
-    //     // For web builds (e.g. via Trunk), iced will hook into the browser event loop.
-    //     // `run` is available on wasm as well.
-    //     let _ = QubitApp::run(iced::Settings::default());
-    // }
-
-    iced::daemon(QubitApp::new, QubitApp::update, QubitApp::view)
+    let daemon = iced::daemon(QubitApp::new, QubitApp::update, QubitApp::view)
         .title(QubitApp::title)
         .theme(QubitApp::theme)
-        .scale_factor(QubitApp::scale_factor)
-        // .subscription(QubitApp::subscription)
-        // .settings(settings)
-        .run()?;
-    // .inspect_err(|err| log::error!("{err}"))?;
+        .scale_factor(QubitApp::scale_factor);
+
+    #[cfg(target_arch = "wasm32")]
+    let daemon = daemon
+        .font(include_bytes!("../assets/DejaVuSans.ttf").as_slice())
+        .default_font(iced::Font::with_name("DejaVu Sans"));
+
+    daemon.run()?;
 
     Ok(())
 }

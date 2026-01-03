@@ -110,7 +110,7 @@ floor(3.3)
 
 - [Rust](https://www.rust-lang.org/) as programing language
 - [Pest](https://pest.rs/) for parser + grammar
-- [Yew](https://yew.rs/) for webassembly
+- [Iced](https://iced.rs/) for GUI applications
 - [Tailwind](https://tailwindcss.com/) for CSS styles
 
 ### Local Development + Enhancement
