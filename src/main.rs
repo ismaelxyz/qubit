@@ -230,10 +230,7 @@ impl QubitApp {
     }
 }
 
-
-
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let daemon = iced::daemon(QubitApp::new, QubitApp::update, QubitApp::view)
         .title(QubitApp::title)
         .theme(QubitApp::theme)
@@ -245,10 +242,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_font(iced::Font::with_name("DejaVu Sans"));
 
     daemon
-        // .subscription(QubitApp::subscription)
-        // .settings(settings)
         .run()?;
-    // .inspect_err(|err| log::error!("{err}"))?;
 
     Ok(())
 }
